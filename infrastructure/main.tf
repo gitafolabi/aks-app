@@ -14,6 +14,14 @@ resource "azurerm_role_assignment" "rolespn" {
   principal_id         = module.ServicePrincipal.service_principal_object_id
 }
 
+# The AKS Service Principal requires permissions on the Node Resource Group (NRG)
+# to provision and manage infrastructure resources like Managed Disks for PVCs.
+resource "azurerm_role_assignment" "rolespn_nrg" {
+  scope                = "/subscriptions/${data.azurerm_client_config.current_caller.subscription_id}/resourceGroups/${var.rgname}-nrg"
+  role_definition_name = "Contributor"
+  principal_id         = module.ServicePrincipal.service_principal_object_id
+}
+
 # Grant the Service Principal "Key Vault Secrets User" role on the Key Vault
 # This allows the External Secrets Operator to pull secrets from the vault.
 resource "azurerm_role_assignment" "sp_keyvault_secrets_user" {
