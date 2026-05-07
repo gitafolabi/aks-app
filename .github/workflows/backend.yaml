@@ -52,7 +52,7 @@ jobs:
         context: ./backend
         file: ./backend/Dockerfile
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:backend-${{github.run_id}}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:backend-latest
 
   update-newtag-in-helm-chart:
     runs-on: ubuntu-latest
@@ -72,7 +72,25 @@ jobs:
 
     - name: Update backend tag in Helm chart
       run: |
-        yq e '.backend.image.tag = "backend-${{ github.run_id }}"' -i helm/crud-app-chart/values.yaml
+        yq e '.backend.image.tag = "latest"' -i helm/crud-app-chart/values.yaml
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS Context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: 'crud-rg'
+        cluster-name: 'crud-app'
+
+    - name: Create or Update Secret
+      run: |
+        kubectl create secret generic backend-secrets \
+          --from-literal=DB_USER=${{ secrets.DB_USER }} \
+          --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+          --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Commit and push changes
       run: |

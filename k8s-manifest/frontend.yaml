@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: your-registry/react-frontend:latest
+        image: avurlerby/crud-app/frontend:latest
         ports:
         - containerPort: 80
 ---
