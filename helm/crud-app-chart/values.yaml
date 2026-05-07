@@ -2,7 +2,7 @@ replicaCount: 1
 frontend:
   image:
     repository: jamiekariuki/crud-app
-    tag: "frontend-16105052287"
+    tag: "frontend-25498907196"
 backend:
   image:
     repository: jamiekariuki/crud-app
