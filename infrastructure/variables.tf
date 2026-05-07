@@ -19,3 +19,8 @@ variable "keyvault_name" {
 variable "SUB_ID" {
   type = string
 }
+
+variable "db_username" {
+  type        = string
+  description = "The database admin username"
+}

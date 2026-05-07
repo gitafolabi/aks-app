@@ -1,9 +1,9 @@
 replicaCount: 1
 frontend:
   image:
-    repository: jamiekariuki/crud-app
+    repository: avurlerby/crud-app
     tag: "latest"
 backend:
   image:
-    repository: jamiekariuki/crud-app
-    tag: "backend-25498545190"
+    repository: avurlerby/crud-app
+    tag: "latest"

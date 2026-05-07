@@ -14,6 +14,16 @@ resource "azurerm_role_assignment" "rolespn" {
   principal_id         = module.ServicePrincipal.service_principal_object_id
 }
 
+# Grant the Service Principal "Key Vault Secrets User" role on the Key Vault
+# This allows the External Secrets Operator to pull secrets from the vault.
+resource "azurerm_role_assignment" "sp_keyvault_secrets_user" {
+  scope                = module.keyvault.keyvault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = module.ServicePrincipal.service_principal_object_id
+
+  depends_on = [module.keyvault]
+}
+
 # Grant the current caller (Terraform runner) "Key Vault Secrets Officer" role on the Key Vault
 # This allows Terraform to create/manage secrets in the Key Vault.
 resource "azurerm_role_assignment" "terraform_runner_keyvault_secrets_officer" {
@@ -41,6 +51,31 @@ module "keyvault" {
 resource "azurerm_key_vault_secret" "example" {
   name         = module.ServicePrincipal.client_id
   value        = module.ServicePrincipal.client_secret
+  key_vault_id = module.keyvault.keyvault_id
+}
+
+# Generate a secure, random password for the database
+resource "random_password" "db_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+# Provision the actual secrets required by the application
+resource "azurerm_key_vault_secret" "db_user" {
+  name         = "db-user"
+  value        = var.db_username # Ensure this is defined in variables.tf
+  key_vault_id = module.keyvault.keyvault_id
+
+  depends_on = [
+    module.keyvault,
+    azurerm_role_assignment.terraform_runner_keyvault_secrets_officer
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "db-password"
+  value        = random_password.db_password.result
   key_vault_id = module.keyvault.keyvault_id
 
   depends_on = [
