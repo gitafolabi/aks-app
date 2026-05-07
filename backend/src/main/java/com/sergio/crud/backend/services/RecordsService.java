@@ -34,7 +34,8 @@ public class RecordsService {
         GymRecord record = gymRecordsRepository.findById(id)
                 .orElseThrow(() -> new AppException("Gym record not found", HttpStatus.NOT_FOUND));
 
-        gymRecordMapper.updateGymRecord(record, gymRecordMapper.toGymRecord(recordDto));
+        // Directly update the attached entity from the DTO
+        gymRecordMapper.updateFromDto(record, recordDto);
 
         GymRecord savedGymRecord = gymRecordsRepository.save(record);
 

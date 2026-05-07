@@ -24,4 +24,11 @@ public interface GymRecordMapper {
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "modified", ignore = true)
     void updateGymRecord(@MappingTarget GymRecord target, GymRecord source);
+
+    /**
+     * Updates an existing GymRecord entity directly from a DTO.
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "created", ignore = true)
+    void updateFromDto(@MappingTarget GymRecord target, GymRecordDto source);
 }

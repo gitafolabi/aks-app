@@ -12,9 +12,9 @@ subscriptionName=$(az account show --query name --output tsv)
 
 # Create resource group
 echo "Checking if [$resourceGroupName] resource group actually exists in the [$subscriptionName] subscription..."
-az group show --name "$resourceGroupName" &>/dev/null || true
+az group show --name "$resourceGroupName" &>/dev/null && RESOURCE_GROUP_EXISTS=true || RESOURCE_GROUP_EXISTS=false
 
-if [[ $? != 0 ]]; then
+if [ "$RESOURCE_GROUP_EXISTS" = false ]; then
     echo "No [$resourceGroupName] resource group actually exists in the [$subscriptionName] subscription"
     echo "Creating [$resourceGroupName] resource group in the [$subscriptionName] subscription..."
 
