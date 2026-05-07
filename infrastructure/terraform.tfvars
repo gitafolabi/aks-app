@@ -1,5 +1,5 @@
 rgname                  = "crud-rg"
-location                = "canadacentral"
+location                = "WestEurope"
 service_principal_name = "crud-aks-sp"
 keyvault_name           = "crud-kv"
-SUB_ID                  = "<your-subscription-id>"
+SUB_ID                  = "7c101cde-202f-446c-a3dd-00545f97f22c"

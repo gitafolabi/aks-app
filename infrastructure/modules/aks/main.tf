@@ -3,7 +3,7 @@ data "azurerm_kubernetes_service_versions" "current" {
   location = var.location
   include_preview = false  
 }
- 
+
 resource "azurerm_kubernetes_cluster" "aks-cluster" {
   name                  = "crud-app"
   location              = var.location
@@ -11,15 +11,19 @@ resource "azurerm_kubernetes_cluster" "aks-cluster" {
   dns_prefix            = "${var.resource_group_name}-cluster"           
   kubernetes_version    =  data.azurerm_kubernetes_service_versions.current.latest_version
   node_resource_group = "${var.resource_group_name}-nrg"
+
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
   
   default_node_pool {
     name       = "defaultpool"
-    vm_size    = "standard_b2s"
+    vm_size    = "standard_d2s_v3"
    # zones   = [1, 2, 3]
     auto_scaling_enabled = true
     max_count            = 3
     min_count            = 1
-    os_disk_size_gb      = 30
+    os_disk_size_gb      = 50
+    temporary_name_for_rotation = "tempnodepool"
     type                 = "VirtualMachineScaleSets"
     node_labels = {
       "nodepool-type"    = "system"
@@ -52,5 +56,3 @@ resource "azurerm_kubernetes_cluster" "aks-cluster" {
   }
  
 }
-
-

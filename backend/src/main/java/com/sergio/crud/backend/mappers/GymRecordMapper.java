@@ -2,7 +2,6 @@ package com.sergio.crud.backend.mappers;
 
 import com.sergio.crud.backend.dtos.GymRecordDto;
 import com.sergio.crud.backend.entities.GymRecord;
-import org.aspectj.lang.annotation.After;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
