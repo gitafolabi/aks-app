@@ -12,9 +12,7 @@ subscriptionName=$(az account show --query name --output tsv)
 
 # Create resource group
 echo "Checking if [$resourceGroupName] resource group actually exists in the [$subscriptionName] subscription..."
-az group show --name "$resourceGroupName" &>/dev/null && RESOURCE_GROUP_EXISTS=true || RESOURCE_GROUP_EXISTS=false
-
-if [ "$RESOURCE_GROUP_EXISTS" = false ]; then
+if ! az group show --name "$resourceGroupName" &>/dev/null; then
     echo "No [$resourceGroupName] resource group actually exists in the [$subscriptionName] subscription"
     echo "Creating [$resourceGroupName] resource group in the [$subscriptionName] subscription..."
 
@@ -35,9 +33,7 @@ fi
 
 # Create storage account
 echo "Checking if [$storageAccountName] storage account actually exists in the [$subscriptionName] subscription..."
-az storage account show --name "$storageAccountName" --resource-group "$resourceGroupName" &>/dev/null || true
-
-if [[ $? != 0 ]]; then
+if ! az storage account show --name "$storageAccountName" --resource-group "$resourceGroupName" &>/dev/null; then
     echo "No [$storageAccountName] storage account actually exists in the [$subscriptionName] subscription"
     echo "Creating [$storageAccountName] storage account in the [$subscriptionName] subscription..."
 
@@ -71,12 +67,8 @@ fi
 
 # Create blob container
 echo "Checking if [$containerName] container actually exists in the [$storageAccountName] storage account..."
-az storage container show \
-    --name $containerName \
-    --account-name $storageAccountName \
-    --account-key $storageAccountKey &>/dev/null
 
-if [[ $? != 0 ]]; then
+if ! az storage container show --name "$containerName" --account-name "$storageAccountName" --account-key "$storageAccountKey" &>/dev/null; then
     echo "No [$containerName] container actually exists in the [$storageAccountName] storage account"
     echo "Creating [$containerName] container in the [$storageAccountName] storage account..."
 

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: avurlerby/crud-app/backend:latest
+        image: avurlerby/crud-app:backend-latest
         ports:
         - containerPort: 8080
         env:
