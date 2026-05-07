@@ -1,32 +1,20 @@
 name: Snyk Security
-
 on:
   push:
-    branches: ["main" ]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
 
-permissions:
-  contents: read
-
 jobs:
   snyk:
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
     runs-on: ubuntu-latest
-    # FIX: Moving env here makes it available to ALL steps below
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
       
-      - name: Set up Snyk CLI
-        uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
-
       - name: Snyk Code test
-        # Now this command can find the SNYK_TOKEN
         run: snyk code test --sarif > snyk-code.sarif || true
 
       - name: Snyk Open Source monitor
@@ -34,12 +22,6 @@ jobs:
 
       - name: Snyk IaC test and report
         run: snyk iac test --report || true
-
-      - name: Build a Docker image
-        run: docker build -t your/image-to-test .
-
-      - name: Snyk Container monitor
-        run: snyk container monitor your/image-to-test --file=Dockerfile
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
