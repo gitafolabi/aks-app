@@ -23,4 +23,5 @@ variable "SUB_ID" {
 variable "db_username" {
   type        = string
   description = "The database admin username"
+  default     = "backend"
 }
