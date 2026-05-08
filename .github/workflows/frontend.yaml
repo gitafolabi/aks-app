@@ -72,32 +72,30 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
 
       - name: Install yq
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
 
-      - name: Update frontend tag in Helm chart
-        run: |
-          yq e '.frontend.image.tag = "latest"' -i helm/crud-app-chart/values.yaml
-
-      - name: Commit and push changes
+      - name: Sync, Update, and Push
         run: |
           git config --global user.email "${{ vars.USER_EMAIL }}"
           git config --global user.name "${{ vars.USER_NAME }}"
           
-          # 1. Get the latest code from main BEFORE adding your changes
+          # 1. Pull while the workspace is clean
           git pull --rebase origin main
           
-          # 2. Now stage your changes
-          git add helm/crud-app-chart/values.yaml
+          # 2. Apply your change ONLY after the pull
+          yq e '.frontend.image.tag = "latest"' -i helm/crud-app-chart/values.yaml
           
           # 3. Commit and push
+          git add helm/crud-app-chart/values.yaml
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Update backend tag [skip ci]"
+            git commit -m "Update frontend tag [skip ci]"
             git push origin main
           fi
 
