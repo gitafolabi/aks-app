@@ -47,7 +47,6 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:backend-latest
 
       - name: Snyk Container monitor
-        # Pass the token ONLY to this step
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk container monitor ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:backend-latest --file=backend/Dockerfile || true
@@ -78,12 +77,18 @@ jobs:
         run: |
           git config --global user.email "${{ vars.USER_EMAIL }}"
           git config --global user.name "${{ vars.USER_NAME }}"
-          git add helm/crud-app-chart/values.yaml
-          # Rebase helps if frontend and backend finish at the same time
+          
+          # 1. Get the latest code from main BEFORE adding your changes
           git pull --rebase origin main
+          
+          # 2. Now stage your changes
+          git add helm/crud-app-chart/values.yaml
+          
+          # 3. Commit and push
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Update backend tag [skip ci]"
             git push origin main
           fi
+

@@ -7,7 +7,6 @@ on:
 
 jobs:
   snyk:
-    # ADD THESE PERMISSIONS HERE:
     permissions:
       contents: read
       security-events: write 
@@ -30,7 +29,6 @@ jobs:
         run: snyk iac test --report || true
 
       - name: Upload result to GitHub Code Scanning
-        # Updated to v3 (or v4 as recommended by GitHub)
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif

@@ -86,11 +86,18 @@ jobs:
         run: |
           git config --global user.email "${{ vars.USER_EMAIL }}"
           git config --global user.name "${{ vars.USER_NAME }}"
+          
+          # 1. Get the latest code from main BEFORE adding your changes
+          git pull --rebase origin main
+          
+          # 2. Now stage your changes
           git add helm/crud-app-chart/values.yaml
+          
+          # 3. Commit and push
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Update frontend tag [skip ci]"
-            git pull --rebase origin main
+            git commit -m "Update backend tag [skip ci]"
             git push origin main
           fi
+
