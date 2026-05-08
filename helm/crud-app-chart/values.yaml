@@ -6,4 +6,4 @@ frontend:
 backend:
   image:
     repository: avurlerby/crud-app
-    tag: "backend-latest"
+    tag: "latest"
