@@ -78,7 +78,7 @@ jobs:
           git pull --rebase origin main
           
           # 2. NOW modify the file with yq
-          yq e '.backend.image.tag = "latest"' -i helm/crud-app-chart/values.yaml
+          yq e '.backend.image.tag = "backend-latest"' -i helm/crud-app-chart/values.yaml
           
           # 3. Stage, Commit, and Push
           git add helm/crud-app-chart/values.yaml

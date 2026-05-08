@@ -88,7 +88,7 @@ jobs:
           git pull --rebase origin main
           
           # 2. Apply your change ONLY after the pull
-          yq e '.frontend.image.tag = "latest"' -i helm/crud-app-chart/values.yaml
+          yq e '.frontend.image.tag = "frontend-latest"' -i helm/crud-app-chart/values.yaml
           
           # 3. Commit and push
           git add helm/crud-app-chart/values.yaml
