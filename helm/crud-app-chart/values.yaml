@@ -2,8 +2,8 @@ replicaCount: 1
 frontend:
   image:
     repository: avurlerby/crud-app
-    tag: "latest"
+    tag: "frontend-latest"
 backend:
   image:
     repository: avurlerby/crud-app
-    tag: "latest"
+    tag: "backend-latest"
