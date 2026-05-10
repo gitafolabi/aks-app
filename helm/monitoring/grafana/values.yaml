@@ -81,7 +81,7 @@ grafana:
     prometheus:
       # Use the internal K8s service name. 
       # Format: http://<service-name>.<namespace>.svc.cluster.local:9090
-      url: http://aks-monitoring-monitoring-prometheus.monitoring.svc.cluster.local:9090
+      url: http://aks-prometheus-monitoring-monitoring-prometheus.monitoring.svc.cluster.local:9090
       
   # Dashboards  
   dashboards:
