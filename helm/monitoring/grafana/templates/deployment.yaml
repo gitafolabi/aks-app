@@ -48,6 +48,8 @@ spec:
           mountPath: /var/lib/grafana
         - name: datasources
           mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboard-provisioning
+          mountPath: /etc/grafana/provisioning/dashboards
         - name: dashboards
           mountPath: /var/lib/grafana/dashboards
       volumes:
@@ -56,6 +58,9 @@ spec:
       - name: datasources
         configMap:
           name: {{ include "monitoring-grafana.fullname" . }}-datasources
+      - name: dashboard-provisioning
+        configMap:
+          name: {{ include "monitoring-grafana.fullname" . }}-provisioning
       - name: dashboards
         configMap:
           name: {{ include "monitoring-grafana.fullname" . }}-dashboards

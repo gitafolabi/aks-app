@@ -19,7 +19,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "monitoring-grafana.fullname" . }}-dashboards
+  name: {{ include "monitoring-grafana.fullname" . }}-provisioning
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "monitoring-grafana.labels" . | nindent 4 }}
@@ -35,6 +35,15 @@ data:
       editable: true
       options:
         path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring-grafana.fullname" . }}-dashboards
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "monitoring-grafana.labels" . | nindent 4 }}
+data:
   kubernetes-cluster-monitoring.json: |
     {
       "dashboard": {
@@ -42,17 +51,23 @@ data:
         "panels": [
           {
             "title": "Node CPU Usage",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
             "targets": [
               {
-                "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (node)"
+                "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\", namespace!=\"kube-system\"}[5m])) by (node)",
+                "legendFormat": "{{ "{{" }}node{{ "}}" }}"
               }
             ]
           },
           {
             "title": "Node Memory Usage",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
             "targets": [
               {
-                "expr": "sum(container_memory_usage_bytes) by (node)"
+                "expr": "sum(container_memory_usage_bytes{container!=\"\", namespace!=\"kube-system\"}) by (node)",
+                "legendFormat": "{{ "{{" }}node{{ "}}" }}"
               }
             ]
           }
