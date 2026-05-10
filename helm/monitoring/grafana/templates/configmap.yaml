@@ -46,6 +46,7 @@ metadata:
 data:
   kubernetes-cluster-monitoring.json: |
     {
+      "uid": "k8s_views_nodes",
       "title": "Kubernetes Cluster Monitoring",
       "schemaVersion": 36,
       "panels": [
@@ -75,6 +76,7 @@ data:
     }
   kubernetes-overview.json: |
     {
+      "uid": "k8s_views_cluster",
       "title": "K8s Cluster Overview",
       "schemaVersion": 36,
       "panels": [
@@ -98,6 +100,7 @@ data:
     }
   elasticsearch-health.json: |
     {
+      "uid": "elastic_health",
       "title": "Elasticsearch Health",
       "schemaVersion": 36,
       "panels": [
@@ -122,6 +125,7 @@ data:
     }
   backend-jvm-monitoring.json: |
     {
+      "uid": "backend-jvm",
       "title": "Backend JVM & API Monitoring",
       "schemaVersion": 36,
       "panels": [
