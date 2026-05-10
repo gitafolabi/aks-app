@@ -74,7 +74,10 @@ autoscaling:
 
 # Grafana configuration
 grafana:
-  adminPassword: admin  # ⚠️ Change this in production!
+  # To use External Secrets, set useExternalSecret to true
+  # and ensure 'grafana-admin-password' exists in your Azure Key Vault
+  useExternalSecret: true
+  adminPassword: admin  # Fallback if useExternalSecret is false
   
   # Data sources
   datasources:

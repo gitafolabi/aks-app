@@ -34,7 +34,14 @@ spec:
           protocol: TCP
         env:
         - name: GF_SECURITY_ADMIN_PASSWORD
+          {{- if .Values.grafana.useExternalSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "monitoring-grafana.fullname" . }}-admin-secret
+              key: admin-password
+          {{- else }}
           value: {{ .Values.grafana.adminPassword }}
+          {{- end }}
         - name: GF_INSTALL_PLUGINS
           value: ""
         livenessProbe:
