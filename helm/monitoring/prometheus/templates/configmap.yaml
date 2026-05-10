@@ -106,19 +106,27 @@ data:
 
       # Kube-state-metrics (Required for K8s Cluster Overview)
       - job_name: 'kube-state-metrics'
-        static_configs:
-          - targets: ['kube-state-metrics.monitoring.svc.cluster.local:8080']
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+          action: keep
+          regex: kube-state-metrics
 
       # Node Exporter (Required for Node CPU/Memory usage)
       - job_name: 'node-exporter'
         kubernetes_sd_configs:
-          - role: endpoints
+        - role: endpoints
         relabel_configs:
-          - source_labels: [__meta_kubernetes_endpoints_name]
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
             action: keep
-            regex: node-exporter
+            regex: prometheus-node-exporter
 
       # Elasticsearch Exporter (Required for Elasticsearch Health)
       - job_name: 'elasticsearch-exporter'
-        static_configs:
-          - targets: ['elasticsearch-exporter.logging.svc.cluster.local:9114']
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_label_app]
+          action: keep
+          regex: elasticsearch-exporter
