@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring-prometheus.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "monitoring-prometheus.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.prometheus.scrapeInterval }}
+      evaluation_interval: {{ .Values.prometheus.evaluationInterval }}
+    
+    scrape_configs:
+      # Kubernetes API server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      # Kubernetes nodes
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      # Kubernetes kubelet
+      - job_name: 'kubernetes-kubelet'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+      # Kubernetes pods - Generic (for applications with /metrics endpoint)
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: "true"
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      # Backend application - Spring Boot metrics
+      - job_name: 'backend-app'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+            - default
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: backend
+        - source_labels: [__meta_kubernetes_pod_ip]
+          action: replace
+          target_label: __address__
+          replacement: $1:8080
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        metrics_path: '/actuator/prometheus'

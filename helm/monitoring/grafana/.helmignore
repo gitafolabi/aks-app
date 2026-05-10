@@ -1,0 +1,34 @@
+# Patterns to ignore when building packages.
+# This supports shell glob patterns, relative paths, and negated patterns
+# as per https://github.com/ingress/helm/wiki/Patterns-in-.helmignore
+# For more information, visit https://github.com/ingress/helm
+
+.DS_Store
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST

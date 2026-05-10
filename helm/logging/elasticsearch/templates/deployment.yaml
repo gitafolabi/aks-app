@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    node.type: es-node-master
+  name: {{ .Values.appName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      node.type: es-node-master
+  template:
+    metadata:
+      labels:
+        node.type: es-node-master
+    spec:
+      containers:
+        - name: es-node-master-container
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: ES_JAVA_OPTS
+              value: {{ .Values.javaOpts | quote }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:9200/_cluster/health
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:9200/_cluster/health
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          ports:
+            - containerPort: 9200
+            - containerPort: 9300

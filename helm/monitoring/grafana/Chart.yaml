@@ -1,0 +1,7 @@
+apiVersion: v2
+name: monitoring-grafana
+description: Grafana visualization and dashboarding platform
+
+type: application
+version: 0.1.0
+appVersion: "10.0.0"

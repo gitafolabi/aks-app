@@ -10,5 +10,16 @@ spring:
     hibernate:
       ddl-auto: update # better than create-drop for persistencehj
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+
 cors:
   allowed-origin: ${FRONTEND_ORIGIN}

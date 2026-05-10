@@ -1,0 +1,15 @@
+Prometheus monitoring server has been deployed successfully!
+
+Access Prometheus UI:
+  kubectl port-forward svc/{{ include "monitoring-prometheus.fullname" . }} 9090:{{ .Values.service.port }} -n {{ .Values.namespace }}
+  
+Then open: http://localhost:9090
+
+Key Metrics Endpoints:
+  - Kubernetes API: https://kubernetes.default.svc
+  - Kubelet: https://kubernetes.default.svc:10250
+  - Backend (Spring Boot): http://backend:8080/actuator/prometheus
+
+To scrape metrics from your backend:
+1. Add @EnablePrometheusEndpoint annotation (if using Spring Boot Actuator)
+2. Ensure backend pods have annotation: prometheus.io/scrape: "true"

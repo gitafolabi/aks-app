@@ -1,0 +1,21 @@
+Grafana dashboard platform has been deployed successfully!
+
+Access Grafana UI:
+  kubectl port-forward svc/{{ include "monitoring-grafana.fullname" . }} 3000:{{ .Values.service.port }} -n {{ .Values.namespace }}
+  
+Then open: http://localhost:3000
+
+Default Credentials:
+  Username: admin
+  Password: {{ .Values.grafana.adminPassword }}
+
+⚠️ IMPORTANT: Change the admin password immediately in production!
+
+Configured Data Source:
+  - Prometheus: {{ .Values.grafana.datasources.prometheus.url }}
+
+Next Steps:
+  1. Login to Grafana
+  2. Add Prometheus as data source (should be pre-configured)
+  3. Import community dashboards or create custom ones
+  4. Set up alerts based on your metrics

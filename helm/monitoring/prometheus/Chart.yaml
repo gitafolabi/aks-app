@@ -1,0 +1,7 @@
+apiVersion: v2
+name: monitoring-prometheus
+description: Prometheus monitoring server for Kubernetes metrics
+
+type: application
+version: 0.1.0
+appVersion: "v2.45.0"

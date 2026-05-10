@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "monitoring-grafana.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "monitoring-grafana.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "monitoring-grafana.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "monitoring-grafana.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "monitoring-grafana.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: grafana
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: {{ .Values.grafana.adminPassword }}
+        - name: GF_INSTALL_PLUGINS
+          value: ""
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        volumeMounts:
+        - name: storage
+          mountPath: /var/lib/grafana
+        - name: datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboards
+          mountPath: /var/lib/grafana/dashboards
+      volumes:
+      - name: storage
+        emptyDir: {}
+      - name: datasources
+        configMap:
+          name: {{ include "monitoring-grafana.fullname" . }}-datasources
+      - name: dashboards
+        configMap:
+          name: {{ include "monitoring-grafana.fullname" . }}-dashboards
