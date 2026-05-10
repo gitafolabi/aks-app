@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-exporter
+  namespace: logging
+  labels:
+    app: elasticsearch-exporter
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: elasticsearch-exporter
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-exporter
+    spec:
+      containers:
+      - name: elasticsearch-exporter
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        args:
+        - --es.uri=http://{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}
+        - --es.all
+        - --es.indices
+        ports:
+        - containerPort: 9114
+          name: metrics
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
