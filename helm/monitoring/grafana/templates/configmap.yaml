@@ -59,3 +59,88 @@ data:
         ]
       }
     }
+  kubernetes-overview.json: |
+    {
+      "dashboard": {
+        "title": "K8s Cluster Overview",
+        "panels": [
+          {
+            "title": "Pod Status (Ready vs Not Ready)",
+            "type": "stat",
+            "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+            "targets": [
+              { "expr": "sum(kube_pod_status_ready{condition=\"true\"})" }
+            ]
+          },
+          {
+            "title": "Node Memory Usage %",
+            "type": "gauge",
+            "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+            "targets": [
+              { "expr": "100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100" }
+            ]
+          }
+        ]
+      }
+    }
+  elasticsearch-health.json: |
+    {
+      "dashboard": {
+        "title": "Elasticsearch Health",
+        "panels": [
+          {
+            "title": "Cluster Status",
+            "type": "stat",
+            "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+            "targets": [
+              { "expr": "elasticsearch_cluster_health_status{color=\"green\"}", "legendFormat": "Green" },
+              { "expr": "elasticsearch_cluster_health_status{color=\"yellow\"}", "legendFormat": "Yellow" }
+            ]
+          },
+          {
+            "title": "JVM Heap Usage",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+            "targets": [
+              { "expr": "elasticsearch_jvm_memory_used_bytes{area=\"heap\"}" }
+            ]
+          }
+        ]
+      }
+    }
+  backend-jvm-monitoring.json: |
+    {
+      "dashboard": {
+        "title": "Backend JVM & API Monitoring",
+        "panels": [
+          {
+            "title": "JVM Heap Usage",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+            "targets": [
+              {
+                "expr": "jvm_memory_used_bytes{kubernetes_namespace=\"crud-app\", area=\"heap\"}",
+                "legendFormat": "Used Heap"
+              }
+            ]
+          },
+          {
+            "title": "HTTP Request Throughput",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+            "targets": [
+              {
+                "expr": "sum(rate(http_server_requests_seconds_count{kubernetes_namespace=\"crud-app\"}[5m])) by (uri, method)",
+                "legendFormat": "{{method}} {{uri}}"
+              }
+            ]
+          },
+          {
+            "title": "Process CPU Usage",
+            "type": "gauge",
+            "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+            "targets": [{ "expr": "process_cpu_usage{kubernetes_namespace=\"crud-app\"} * 100" }]
+          }
+        ]
+      }
+    }

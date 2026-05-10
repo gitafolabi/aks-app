@@ -16,13 +16,13 @@ data:
                 equals: 
                   kubernetes.namespace: {{ .Values.appNamespace }}
               config:
-                - module: nginx
-                  access.input:
-                      type: docker
-                      containers.ids:
-                      - "${data.kubernetes.container.id}"
-                      paths:
-                        - /var/log/containers/*${data.kubernetes.container.id}.log
+                - type: container
+                  paths:
+                    - /var/log/pods/{{ .Values.appNamespace }}_${data.kubernetes.pod.name}_${data.kubernetes.pod.uid}/${data.kubernetes.container.name}/*.log
+
+    processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
 
     setup.dashboards.enabled: {{ .Values.setupDashboards }}
 {{- if .Values.setupDashboards }}
