@@ -11,7 +11,7 @@ spec:
     path: helm/crud-app-chart
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: crud-app
   syncPolicy:
     automated:
       prune: true

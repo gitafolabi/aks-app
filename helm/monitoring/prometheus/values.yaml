@@ -44,7 +44,7 @@ ingress:
 resources:
   requests:
     cpu: 100m
-    memory: 256Mi
+    memory: 128Mi
   limits:
     cpu: 500m
     memory: 512Mi
@@ -79,4 +79,4 @@ prometheus:
 backend:
   serviceName: backend
   servicePort: 8080
-  namespace: default
+  namespace: crud-app

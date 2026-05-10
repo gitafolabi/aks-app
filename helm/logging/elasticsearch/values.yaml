@@ -66,16 +66,18 @@ ingress:
 resources:
   requests:
     cpu: 100m
-    memory: 512Mi
+    memory: 300Mi
   limits:
     cpu: 300m
     memory: 768Mi
 
 livenessProbe:
+  initialDelaySeconds: 60
   httpGet:
     path: /
     port: http
 readinessProbe:
+  initialDelaySeconds: 60
   httpGet:
     path: /
     port: http
