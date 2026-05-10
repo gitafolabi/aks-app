@@ -94,3 +94,22 @@ data:
           action: replace
           target_label: kubernetes_pod_name
         metrics_path: '/actuator/prometheus'
+
+      # Kube-state-metrics (Required for K8s Cluster Overview)
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics.monitoring.svc.cluster.local:8080']
+
+      # Node Exporter (Required for Node CPU/Memory usage)
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_endpoints_name]
+            action: keep
+            regex: node-exporter
+
+      # Elasticsearch Exporter (Required for Elasticsearch Health)
+      - job_name: 'elasticsearch-exporter'
+        static_configs:
+          - targets: ['elasticsearch-exporter.logging.svc.cluster.local:9114']
