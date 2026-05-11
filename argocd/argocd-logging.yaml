@@ -1,105 +1,105 @@
----
-# ArgoCD Application for ELK Stack Logging
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-elk-logging
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/logging/elasticsearch
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: logging
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
----
-# ArgoCD Application for Filebeat
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-filebeat-collector
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/logging/filebeat
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: logging
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
----
-# ArgoCD Application for Kibana
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-kibana-dashboard
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/logging/kibana
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: logging
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
+# ---
+# # ArgoCD Application for ELK Stack Logging
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-elk-logging
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/logging/elasticsearch
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: logging
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
+# ---
+# # ArgoCD Application for Filebeat
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-filebeat-collector
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/logging/filebeat
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: logging
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
+# ---
+# # ArgoCD Application for Kibana
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-kibana-dashboard
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/logging/kibana
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: logging
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
 
----
-# ArgoCD Application for Elasticsearch Exporter
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-elasticsearch-exporter
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/logging/elasticsearch-exporter
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: logging
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
+# ---
+# # ArgoCD Application for Elasticsearch Exporter
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-elasticsearch-exporter
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/logging/elasticsearch-exporter
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: logging
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true

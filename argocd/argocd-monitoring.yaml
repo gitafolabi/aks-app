@@ -1,54 +1,55 @@
----
-# ArgoCD Application for Prometheus Monitoring
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-prometheus-monitoring
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/monitoring/prometheus
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitoring
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
----
-# ArgoCD Application for Grafana Dashboarding
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: aks-grafana-dashboards
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/monitoring/grafana
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitoring
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
+# ---
+# # ArgoCD Application for Prometheus Monitoring
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-prometheus-monitoring
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/monitoring/prometheus
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: monitoring
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
+# ---
+# # ArgoCD Application for Grafana Dashboarding
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-grafana-dashboards
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/monitoring/grafana
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: monitoring
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
+# # 
