@@ -1,25 +1,94 @@
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: aks-crud-app
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://github.com/gitafolabi/aks-app.git
+#     targetRevision: main
+#     path: helm/crud-app-chart
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: crud-app
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - RespectIgnoreDifferences=true
+#     retry:
+#       limit: 5
+#       backoff:
+#         duration: 5s
+
+
+
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
-  name: aks-crud-app
+  name: aks-platform
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/gitafolabi/aks-app.git
-    targetRevision: main
-    path: helm/crud-app-chart
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: crud-app
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
+  generators:
+    - list:
+        elements:
+          - name: aks-crud-app
+            path: helm/crud-app-chart
+            namespace: crud-app
+
+          - name: aks-elk-logging
+            path: helm/logging/elasticsearch
+            namespace: logging
+
+          - name: aks-filebeat-collector
+            path: helm/logging/filebeat
+            namespace: logging
+
+          - name: aks-kibana-dashboard
+            path: helm/logging/kibana
+            namespace: logging
+
+          - name: aks-elasticsearch-exporter
+            path: helm/logging/elasticsearch-exporter
+            namespace: logging
+
+          - name: aks-prometheus-monitoring
+            path: helm/monitoring/prometheus
+            namespace: monitoring
+
+          - name: aks-grafana-dashboards
+            path: helm/monitoring/grafana
+            namespace: monitoring
+
+  template:
+    metadata:
+      name: "{{name}}"
+
+    spec:
+      project: default
+
+      source:
+        repoURL: https://github.com/gitafolabi/aks-app.git
+        targetRevision: main
+        path: "{{path}}"
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
