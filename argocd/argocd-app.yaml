@@ -1,43 +1,43 @@
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: aks-crud-app
-#   namespace: argocd
-# spec:
-#   project: default
-#   source:
-#     repoURL: https://github.com/gitafolabi/aks-app.git
-#     targetRevision: main
-#     path: helm/crud-app-chart
-#   destination:
-#     server: https://kubernetes.default.svc
-#     namespace: crud-app
-#   syncPolicy:
-#     automated:
-#       prune: true
-#       selfHeal: true
-#     syncOptions:
-#       - CreateNamespace=true
-#       - RespectIgnoreDifferences=true
-#     retry:
-#       limit: 5
-#       backoff:
-#         duration: 5s
-
-
-
 apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
+kind: Application
 metadata:
-  name: aks-platform
+  name: aks-crud-app
   namespace: argocd
 spec:
-  generators:
-    - list:
-        elements:
-          - name: aks-crud-app
-            path: helm/crud-app-chart
-            namespace: crud-app
+  project: default
+  source:
+    repoURL: https://github.com/gitafolabi/aks-app.git
+    targetRevision: main
+    path: helm/crud-app-chart
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: crud-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+
+
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: ApplicationSet
+# metadata:
+#   name: aks-platform
+#   namespace: argocd
+# spec:
+#   generators:
+#     - list:
+#         elements:
+#           - name: aks-crud-app
+#             path: helm/crud-app-chart
+#             namespace: crud-app
 
           # - name: aks-elk-logging
           #   path: helm/logging/elasticsearch
@@ -63,32 +63,31 @@ spec:
           #   path: helm/monitoring/grafana
           #   namespace: monitoring
 
-  template:
-    metadata:
-      name: "{{name}}"
+  # template:
+  #   metadata:
+  #     name: "{{name}}"
 
-    spec:
-      project: default
+  #   spec:
+  #     project: default
 
-      source:
-        repoURL: https://github.com/gitafolabi/aks-app.git
-        targetRevision: main
-        path: "{{path}}"
+  #     source:
+  #       repoURL: https://github.com/gitafolabi/aks-app.git
+  #       targetRevision: main
+  #       path: "{{path}}"
 
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: "{{namespace}}"
+  #     destination:
+  #       server: https://kubernetes.default.svc
+  #       namespace: "{{namespace}}"
 
-      syncPolicy: {}
-        # automated:
-        #   prune: true
-        #   selfHeal: true
+  #     syncPolicy:
+  #       automated:
+  #         prune: true
+  #         selfHeal: true
+  #       syncOptions:
+  #         - CreateNamespace=true
+  #         - RespectIgnoreDifferences=true
 
-        syncOptions:
-          - CreateNamespace=true
-          - RespectIgnoreDifferences=true
-
-        retry:
-          limit: 5
-          backoff:
-            duration: 5s
+  #       retry:
+  #         limit: 5
+  #         backoff:
+  #           duration: 5s
