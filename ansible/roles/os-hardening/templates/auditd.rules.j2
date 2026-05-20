@@ -1,0 +1,39 @@
+# Managed by Ansible — do not edit manually
+# CIS Benchmark Level 2 audit rules
+
+# Remove any existing rules
+-D
+
+# Buffer size — increase if auditing is dropping events
+-b 8192
+
+# Failure mode: 1 = printk, 2 = panic
+-f 1
+
+# Record changes to date and time information
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change
+-a always,exit -F arch=b64 -S clock_settime -k time-change
+-w /etc/localtime -p wa -k time-change
+
+# Record changes to user and group files
+-w /etc/group -p wa -k identity
+-w /etc/passwd -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/shadow -p wa -k identity
+
+# Record login and logout events
+-w /var/log/lastlog -p wa -k logins
+-w /var/run/faillock -p wa -k logins
+
+# Record changes to sudo configuration
+-w /etc/sudoers -p wa -k sudoers
+-w /etc/sudoers.d/ -p wa -k sudoers
+
+# Record kernel module loading/unloading
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -k modules
+
+# Make the audit configuration immutable — requires reboot to change rules
+-e 2

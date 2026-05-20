@@ -1,0 +1,10 @@
+---
+- name: Install hardening packages
+  ansible.builtin.package:
+    name: "{{ hardening_packages_present }}"
+    state: present
+
+- name: Remove insecure packages
+  ansible.builtin.package:
+    name: "{{ hardening_packages_absent }}"
+    state: absent

@@ -1,0 +1,30 @@
+---
+# Azure Resource Manager dynamic inventory plugin.
+# Authenticates via DefaultAzureCredential (service principal env vars or az login).
+# Run: ansible-inventory -i inventory/azure_rm.yml --list
+plugin: azure.azcollection.azure_rm
+auth_source: auto
+
+include_vm_resource_groups:
+  - crud-app-rg
+
+# Group hosts by tag value so playbooks can target role=worker or env=prod
+keyed_groups:
+  - key: tags.role
+    prefix: role
+    separator: "_"
+  - key: tags.environment
+    prefix: env
+    separator: "_"
+
+# Use private IP inside the VNet; fall back to public IP for bastion access
+hostvar_expressions:
+  ansible_host: >-
+    private_ipv4_addresses[0]
+    if private_ipv4_addresses
+    else public_ipv4_addresses[0]
+
+# Skip VMs that are not running
+exclude_filters:
+  - powerstate: stopped
+  - powerstate: deallocated

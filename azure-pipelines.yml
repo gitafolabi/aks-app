@@ -1,0 +1,317 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - "**.md"
+      - helm/crud-app-chart/values.yaml  # updated by pipeline itself; don't re-trigger
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  - group: crud-app-secrets          # ADO variable group: ACR_NAME, AZURE_SUBSCRIPTION_ID, RESOURCE_GROUP, AKS_CLUSTER
+  - name: IMAGE_TAG
+    value: $(Build.SourceVersion)
+  - name: TF_WORKING_DIR
+    value: infrastructure
+
+stages:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 1 — Validate
+# Terraform fmt/validate + Helm lint. Fast feedback with no cloud calls.
+# ─────────────────────────────────────────────────────────────────────────────
+  - stage: validate
+    displayName: Validate
+    jobs:
+      - job: terraform_validate
+        displayName: Terraform fmt & validate
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: TerraformInstaller@1
+            displayName: Install Terraform
+            inputs:
+              terraformVersion: latest
+
+          - script: terraform fmt -check -recursive
+            displayName: Terraform fmt check
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - script: terraform init -backend=false
+            displayName: Terraform init (no backend)
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - script: terraform validate
+            displayName: Terraform validate
+            workingDirectory: $(TF_WORKING_DIR)
+
+      - job: helm_lint
+        displayName: Helm lint
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - script: |
+              curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+              helm lint helm/crud-app-chart
+            displayName: Helm lint crud-app-chart
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 2 — Build & Scan
+# Compile, test, security scan, build Docker images, push to ACR.
+# ─────────────────────────────────────────────────────────────────────────────
+  - stage: build
+    displayName: Build & Scan
+    dependsOn: validate
+    jobs:
+      - job: backend_build
+        displayName: Backend — Maven build & test
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: "21"
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: ./mvnw clean package -DskipTests=false --no-transfer-progress
+            displayName: Maven build & unit tests
+            workingDirectory: backend
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: backend/target/surefire-reports/*.xml
+            condition: always()
+
+      - job: frontend_build
+        displayName: Frontend — npm build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "22.x"
+
+          - script: npm ci
+            displayName: npm install
+            workingDirectory: frontend
+
+          - script: npm run build
+            displayName: npm build
+            workingDirectory: frontend
+
+      - job: docker_build_push
+        displayName: Docker build, scan & push to ACR
+        dependsOn:
+          - backend_build
+          - frontend_build
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            backend:
+              SERVICE: backend
+              DOCKERFILE: backend/Dockerfile
+              BUILD_CONTEXT: backend
+            frontend:
+              SERVICE: frontend
+              DOCKERFILE: frontend/Dockerfile
+              BUILD_CONTEXT: frontend
+        steps:
+          - task: AzureCLI@2
+            displayName: ACR login
+            inputs:
+              azureSubscription: crud-app-service-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: az acr login --name $(ACR_NAME)
+
+          - script: |
+              docker build \
+                -f $(DOCKERFILE) \
+                -t $(ACR_NAME).azurecr.io/$(SERVICE):$(IMAGE_TAG) \
+                $(BUILD_CONTEXT)
+            displayName: Docker build
+
+          - task: AzureCLI@2
+            displayName: Trivy scan
+            inputs:
+              azureSubscription: crud-app-service-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  aquasec/trivy:latest image \
+                  --exit-code 1 \
+                  --ignore-unfixed \
+                  --severity CRITICAL \
+                  $(ACR_NAME).azurecr.io/$(SERVICE):$(IMAGE_TAG)
+
+          - script: docker push $(ACR_NAME).azurecr.io/$(SERVICE):$(IMAGE_TAG)
+            displayName: Push to ACR
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 3 — Provision
+# Terraform plan on all branches; apply only on main after approval.
+# ─────────────────────────────────────────────────────────────────────────────
+  - stage: provision
+    displayName: Provision Infrastructure
+    dependsOn: build
+    jobs:
+      - job: terraform_plan
+        displayName: Terraform plan
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: latest
+
+          - task: AzureCLI@2
+            displayName: Terraform init
+            inputs:
+              azureSubscription: crud-app-service-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
+                terraform init
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - task: AzureCLI@2
+            displayName: Terraform plan
+            inputs:
+              azureSubscription: crud-app-service-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
+                terraform plan -out=tfplan -input=false
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Terraform plan
+            inputs:
+              targetPath: $(TF_WORKING_DIR)/tfplan
+              artifact: tfplan
+
+      # Apply requires a manual approval gate configured on the 'production' environment in ADO
+      - deployment: terraform_apply
+        displayName: Terraform apply
+        dependsOn: terraform_plan
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        environment: production
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: latest
+
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: tfplan
+                    path: $(TF_WORKING_DIR)
+
+                - task: AzureCLI@2
+                  displayName: Terraform apply
+                  inputs:
+                    azureSubscription: crud-app-service-connection
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      export ARM_CLIENT_ID=$servicePrincipalId
+                      export ARM_CLIENT_SECRET=$servicePrincipalKey
+                      export ARM_TENANT_ID=$tenantId
+                      export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
+                      terraform init
+                      terraform apply -input=false tfplan
+                  workingDirectory: $(TF_WORKING_DIR)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 4 — Deploy
+# Update Helm values.yaml with the new image tag. ArgoCD detects the diff
+# and rolls out the change automatically (GitOps — pipeline owns the trigger,
+# ArgoCD owns the reconciliation).
+# ─────────────────────────────────────────────────────────────────────────────
+  - stage: deploy
+    displayName: Deploy (GitOps trigger)
+    dependsOn: provision
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: update_helm_values
+        displayName: Update image tags in Helm values
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            persistCredentials: true
+
+          - script: |
+              curl -sSL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+                -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+            displayName: Install yq
+
+          - script: |
+              yq e ".backend.image.tag = \"$(IMAGE_TAG)\"" -i helm/crud-app-chart/values.yaml
+              yq e ".frontend.image.tag = \"$(IMAGE_TAG)\"" -i helm/crud-app-chart/values.yaml
+            displayName: Update image tags
+
+          - script: |
+              git config user.email "devops-pipeline@azure.com"
+              git config user.name "Azure DevOps Pipeline"
+              git add helm/crud-app-chart/values.yaml
+              git diff --staged --quiet || git commit -m "ci: update image tags to $(IMAGE_TAG) [skip ci]"
+              git push origin HEAD:main
+            displayName: Commit and push updated values
+
+      - job: verify_argocd_sync
+        displayName: Verify ArgoCD sync
+        dependsOn: update_helm_values
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: Get AKS credentials
+            inputs:
+              azureSubscription: crud-app-service-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az aks get-credentials \
+                  --resource-group $(RESOURCE_GROUP) \
+                  --name $(AKS_CLUSTER) \
+                  --overwrite-existing
+
+          - script: |
+              echo "Waiting for ArgoCD to sync crud-app..."
+              kubectl wait application/crud-app \
+                --for=jsonpath='{.status.sync.status}'=Synced \
+                --timeout=300s \
+                -n argocd
+              kubectl wait application/crud-app \
+                --for=jsonpath='{.status.health.status}'=Healthy \
+                --timeout=300s \
+                -n argocd
+              echo "Application synced and healthy."
+            displayName: Wait for ArgoCD sync and health

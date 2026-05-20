@@ -1,0 +1,9 @@
+---
+# Targeted hardening playbook — run this independently of the full site.yml.
+# Usage: ansible-playbook harden.yml -i inventory/azure_rm.yml --limit env_prod
+- name: Apply OS hardening
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - os-hardening

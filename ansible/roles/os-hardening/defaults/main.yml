@@ -1,0 +1,47 @@
+---
+# Packages to ensure are present
+hardening_packages_present:
+  - auditd
+  - audispd-plugins
+  - aide
+  - rsyslog
+  - fail2ban
+
+# Packages that should not be on a production host
+hardening_packages_absent:
+  - telnet
+  - rsh
+  - ypbind
+  - tftp
+
+# sysctl tuning — CIS Benchmark Level 1 selections
+hardening_sysctl_params:
+  # Disable IP forwarding (not a router)
+  net.ipv4.ip_forward: 0
+  # Ignore ICMP broadcast requests
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  # Enable TCP SYN cookies (SYN flood protection)
+  net.ipv4.tcp_syncookies: 1
+  # Disable source routing
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  # Disable ICMP redirect acceptance
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  # Log suspicious packets
+  net.ipv4.conf.all.log_martians: 1
+  # Restrict kernel pointer leaks
+  kernel.kptr_restrict: 2
+  # Restrict dmesg access to root
+  kernel.dmesg_restrict: 1
+
+# SSH hardening — applied to /etc/ssh/sshd_config.d/hardening.conf
+hardening_ssh_config:
+  PermitRootLogin: "no"
+  PasswordAuthentication: "no"
+  X11Forwarding: "no"
+  MaxAuthTries: "3"
+  ClientAliveInterval: "300"
+  ClientAliveCountMax: "2"
+  AllowTcpForwarding: "no"
+  Protocol: "2"

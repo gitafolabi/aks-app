@@ -1,0 +1,16 @@
+---
+# Master playbook — runs all roles against the appropriate host groups.
+# Usage: ansible-playbook site.yml -i inventory/azure_rm.yml
+- name: Harden all Linux VMs
+  hosts: role_worker
+  become: true
+  gather_facts: true
+  roles:
+    - os-hardening
+
+- name: Deploy application to AKS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - k8s-deploy

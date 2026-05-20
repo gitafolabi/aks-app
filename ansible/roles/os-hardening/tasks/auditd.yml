@@ -1,0 +1,15 @@
+---
+- name: Deploy auditd rules
+  ansible.builtin.template:
+    src: auditd.rules.j2
+    dest: /etc/audit/rules.d/hardening.rules
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart auditd
+
+- name: Ensure auditd is enabled and running
+  ansible.builtin.service:
+    name: auditd
+    state: started
+    enabled: true

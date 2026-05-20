@@ -1,0 +1,63 @@
+---
+- name: Update Helm release with new image tags
+  ansible.builtin.command:
+    cmd: >
+      helm upgrade crud-app ./helm/crud-app-chart
+      --namespace {{ k8s_namespace }}
+      --reuse-values
+      --set backend.image.tag={{ item.image_tag }}
+      --set frontend.image.tag={{ item.image_tag }}
+      --kubeconfig {{ kubeconfig_path }}
+  loop: "{{ k8s_deployments }}"
+  when: item.name == 'backend' or item.name == 'frontend'
+  changed_when: true
+  run_once: true
+
+- name: Wait for backend rollout to complete
+  ansible.builtin.command:
+    cmd: >
+      kubectl rollout status deployment/backend
+      --namespace {{ k8s_namespace }}
+      --timeout {{ k8s_rollout_timeout }}s
+      --kubeconfig {{ kubeconfig_path }}
+  changed_when: false
+  register: backend_rollout
+
+- name: Wait for frontend rollout to complete
+  ansible.builtin.command:
+    cmd: >
+      kubectl rollout status deployment/frontend
+      --namespace {{ k8s_namespace }}
+      --timeout {{ k8s_rollout_timeout }}s
+      --kubeconfig {{ kubeconfig_path }}
+  changed_when: false
+  register: frontend_rollout
+
+- name: Verify minimum ready replicas — backend
+  ansible.builtin.command:
+    cmd: >
+      kubectl get deployment backend
+      --namespace {{ k8s_namespace }}
+      --kubeconfig {{ kubeconfig_path }}
+      -o jsonpath='{.status.readyReplicas}'
+  changed_when: false
+  register: backend_ready
+  failed_when: (backend_ready.stdout | int) < k8s_min_ready_replicas
+
+- name: Verify minimum ready replicas — frontend
+  ansible.builtin.command:
+    cmd: >
+      kubectl get deployment frontend
+      --namespace {{ k8s_namespace }}
+      --kubeconfig {{ kubeconfig_path }}
+      -o jsonpath='{.status.readyReplicas}'
+  changed_when: false
+  register: frontend_ready
+  failed_when: (frontend_ready.stdout | int) < k8s_min_ready_replicas
+
+- name: Report deployment status
+  ansible.builtin.debug:
+    msg:
+      - "Backend ready replicas: {{ backend_ready.stdout }}"
+      - "Frontend ready replicas: {{ frontend_ready.stdout }}"
+      - "Deployment complete — zero downtime maintained via rolling update strategy"

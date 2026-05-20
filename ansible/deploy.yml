@@ -1,0 +1,24 @@
+---
+# Zero-downtime deployment playbook.
+# Usage: ansible-playbook deploy.yml -e "image_tag=abc1234"
+- name: Deploy to AKS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - image_tag is defined
+          - image_tag | length > 0
+        fail_msg: "image_tag must be passed via -e image_tag=<git-sha>"
+
+  roles:
+    - role: k8s-deploy
+      vars:
+        k8s_deployments:
+          - name: backend
+            image_tag: "{{ image_tag }}"
+          - name: frontend
+            image_tag: "{{ image_tag }}"

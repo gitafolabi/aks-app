@@ -1,0 +1,13 @@
+---
+k8s_namespace: boutique
+k8s_deployments:
+  - name: backend
+    image_tag: latest
+  - name: frontend
+    image_tag: latest
+
+# How long to wait for a rollout to complete before declaring failure
+k8s_rollout_timeout: 300
+
+# Minimum ready replicas required before marking a deployment healthy
+k8s_min_ready_replicas: 1
