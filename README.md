@@ -116,13 +116,52 @@ Terraform writes a `kubeconfig` file (permissions `0600`) after the cluster is c
 
 ---
 
-### 2. CI Pipeline — GitHub Actions
+### 2. CI Pipelines — Overview
 
-Triggers on pushes to `main` when files inside `frontend/` or `backend/` change. Each workflow runs three jobs in sequence:
+Two independent CI pipelines build and push Docker images. They serve different purposes and use different registries and image tagging strategies:
 
-1. **build** — compiles the app (Maven / npm)
-2. **push** — runs Snyk container scan, then pushes image to Docker Hub as `avurlerby/crud-app:<service>-latest`
-3. **update-newtag-in-helm-chart** — uses `yq` to update `helm/crud-app-chart/values.yaml` with the new tag, then commits and pushes (`[skip ci]`)
+| | GitHub Actions | Azure DevOps |
+|---|---|---|
+| **File** | `.github/workflows/frontend.yaml` / `backend.yaml` | `azure-pipelines.yml` |
+| **Trigger** | Push to `main` (path-filtered per service) | Push/PR to `main` (excludes `*.md` and `values.yaml`) |
+| **Registry** | Docker Hub (`avurlerby/crud-app`) | Azure Container Registry (ACR) |
+| **Image tag** | `frontend-latest` / `backend-latest` | Git commit SHA (e.g. `abc1234`) — immutable |
+| **Security scan** | Snyk container monitor | Trivy — fails build on CRITICAL CVEs |
+| **Infra provisioning** | No | Yes — Terraform plan/apply stage |
+| **Scope** | Lightweight, service-scoped | Full pipeline: validate → build → provision → deploy |
+
+---
+
+### 2a. GitHub Actions (`.github/workflows/`)
+
+Two separate workflows — `frontend.yaml` and `backend.yaml` — each triggered independently when their respective directory changes.
+
+**Job flow (same structure for both):**
+
+```
+push to main (frontend/** or backend/**)
+        │
+        ▼
+   [build]
+   ├── frontend: npm ci → npm run build (Node 20)
+   └── backend:  ./mvnw clean install -DskipTests (JDK 21)
+        │
+        ▼ (needs: build)
+   [push]
+   ├── docker/setup-buildx
+   ├── Login to Docker Hub
+   ├── docker build (local, --load, not yet pushed)
+   ├── snyk container monitor    ← vulnerability scan (non-blocking: || true)
+   └── docker push avurlerby/crud-app:<service>-latest
+        │
+        ▼ (needs: push)
+   [update-newtag-in-helm-chart]
+   ├── git pull --rebase origin main   ← avoids race condition
+   ├── yq e '.frontend/backend.image.tag = "...-latest"' -i helm/crud-app-chart/values.yaml
+   └── git commit -m "Update <service> tag [skip ci]" && git push
+```
+
+The `[skip ci]` commit message prevents the values.yaml update from re-triggering the workflow. The rebase-before-modify pattern avoids push conflicts when both frontend and backend pipelines run concurrently.
 
 **Required GitHub Secrets:**
 
@@ -130,30 +169,65 @@ Triggers on pushes to `main` when files inside `frontend/` or `backend/` change.
 |---|---|
 | `DOCKERHUB_USERNAME` | Docker Hub login |
 | `DOCKERHUB_PASSWORD` | Docker Hub login |
-| `AZURE_CREDENTIALS` | AKS access for secret sync |
-| `TOKEN` | PAT for pushing the values.yaml commit |
+| `AZURE_CREDENTIALS` | AKS access |
+| `TOKEN` | PAT with repo write scope (for the values.yaml commit) |
 | `DB_USER` | PostgreSQL username |
 | `DB_PASSWORD` | PostgreSQL password |
 | `SNYK_TOKEN` | Snyk container scanning |
 
-**Required GitHub Variables:** `USER_EMAIL`, `USER_NAME` (used for the git commit identity).
+**Required GitHub Variables:** `USER_EMAIL`, `USER_NAME` (git commit identity for the values.yaml push).
 
 ---
 
-### 3. CI Pipeline — Azure DevOps (`azure-pipelines.yml`)
+### 2b. Azure DevOps (`azure-pipelines.yml`)
 
-A more complete pipeline with four stages that uses immutable git SHA image tags and pushes to Azure Container Registry (ACR).
+A four-stage pipeline that covers the full lifecycle from static validation through to a verified deployment. Uses the git commit SHA as the image tag so every image is uniquely and traceably tagged.
 
-| Stage | Jobs | Notes |
-|---|---|---|
-| **Validate** | Terraform fmt/validate, Helm lint | No cloud calls |
-| **Build & Scan** | Maven build + tests, npm build, Docker build + Trivy scan, push to ACR | Fails on CRITICAL CVEs |
-| **Provision** | Terraform plan (all branches), Terraform apply (main + approval gate) | Manual approval on `production` environment |
-| **Deploy** | Update Helm values with SHA tag, wait for Argo CD Synced + Healthy | `[skip ci]` commit |
+**Stage flow:**
 
-**Required ADO Variable Group (`crud-app-secrets`):** `ACR_NAME`, `AZURE_SUBSCRIPTION_ID`, `RESOURCE_GROUP`, `AKS_CLUSTER`.
+```
+push/PR to main
+        │
+        ▼
+   [Validate]  ── runs in parallel ──────────────────────┐
+   ├── terraform fmt -check -recursive                   │
+   ├── terraform init -backend=false                     │
+   ├── terraform validate                                │
+   └── helm lint helm/crud-app-chart    ◄────────────────┘
+        │ (no cloud calls — fast feedback)
+        ▼
+   [Build & Scan]
+   ├── backend: ./mvnw clean package (tests ON) → JUnit results published
+   ├── frontend: npm ci → npm run build
+   └── docker_build_push (matrix: backend + frontend, runs in parallel)
+       ├── az acr login
+       ├── docker build -t <ACR>.azurecr.io/<service>:<git-SHA>
+       ├── trivy image --exit-code 1 --severity CRITICAL   ← blocks on critical CVEs
+       └── docker push → ACR
+        │
+        ▼
+   [Provision]  (main branch only for apply)
+   ├── terraform plan → artifact: tfplan
+   └── terraform apply  ← requires manual approval on 'production' ADO environment
+        │
+        ▼
+   [Deploy]  (main branch only)
+   ├── yq: update .backend.image.tag and .frontend.image.tag to <git-SHA>
+   ├── git commit -m "ci: update image tags to <git-SHA> [skip ci]" && push
+   └── kubectl wait application/crud-app --for=jsonpath=...=Synced --timeout=300s
+       kubectl wait application/crud-app --for=jsonpath=...=Healthy --timeout=300s
+```
 
-The ADO pipeline uses the git commit SHA as the image tag (e.g., `abc1234`), giving immutable and traceable deployments — unlike the GitHub Actions pipeline which uses `frontend-latest`/`backend-latest`.
+The final step polls Argo CD directly — the pipeline only marks success after the cluster is confirmed Synced and Healthy.
+
+**Required ADO Variable Group (`crud-app-secrets`):**
+
+| Variable | Purpose |
+|---|---|
+| `ACR_NAME` | Azure Container Registry name |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription |
+| `RESOURCE_GROUP` | Resource group containing the AKS cluster |
+| `AKS_CLUSTER` | AKS cluster name (for `az aks get-credentials`) |
 
 ---
 
