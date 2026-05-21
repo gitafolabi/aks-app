@@ -13,7 +13,16 @@ pr:
       - main
 
 variables:
-  - group: crud-app-secrets          # ADO variable group: ACR_NAME, AZURE_SUBSCRIPTION_ID, RESOURCE_GROUP, AKS_CLUSTER
+  # Set these in ADO → Pipelines → Edit → Variables (or create a Library group named
+  # "crud-app-secrets" and switch back to "- group: crud-app-secrets" below)
+  - name: ACR_NAME
+    value: ''                        # e.g. myregistry  (without .azurecr.io)
+  - name: AZURE_SUBSCRIPTION_ID
+    value: ''
+  - name: RESOURCE_GROUP
+    value: ''
+  - name: AKS_CLUSTER
+    value: ''
   - name: IMAGE_TAG
     value: $(Build.SourceVersion)
   - name: TF_WORKING_DIR
