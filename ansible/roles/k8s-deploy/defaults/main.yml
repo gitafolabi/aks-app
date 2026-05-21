@@ -1,5 +1,5 @@
 ---
-k8s_namespace: boutique
+k8s_namespace: crud-app
 k8s_deployments:
   - name: backend
     image_tag: latest

@@ -182,13 +182,13 @@ stages:
               scriptType: bash
               scriptLocation: inlineScript
               addSpnToEnvironment: true
+              workingDirectory: $(TF_WORKING_DIR)
               inlineScript: |
                 export ARM_CLIENT_ID=$servicePrincipalId
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
                 terraform init
-            workingDirectory: $(TF_WORKING_DIR)
 
           - task: AzureCLI@2
             displayName: Terraform plan
@@ -197,13 +197,13 @@ stages:
               scriptType: bash
               scriptLocation: inlineScript
               addSpnToEnvironment: true
+              workingDirectory: $(TF_WORKING_DIR)
               inlineScript: |
                 export ARM_CLIENT_ID=$servicePrincipalId
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
                 export ARM_TENANT_ID=$tenantId
                 export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
                 terraform plan -out=tfplan -input=false
-            workingDirectory: $(TF_WORKING_DIR)
 
           - task: PublishPipelineArtifact@1
             displayName: Publish Terraform plan
@@ -239,6 +239,7 @@ stages:
                     scriptType: bash
                     scriptLocation: inlineScript
                     addSpnToEnvironment: true
+                    workingDirectory: $(TF_WORKING_DIR)
                     inlineScript: |
                       export ARM_CLIENT_ID=$servicePrincipalId
                       export ARM_CLIENT_SECRET=$servicePrincipalKey
@@ -246,7 +247,6 @@ stages:
                       export ARM_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID)
                       terraform init
                       terraform apply -input=false tfplan
-                  workingDirectory: $(TF_WORKING_DIR)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STAGE 4 — Deploy
